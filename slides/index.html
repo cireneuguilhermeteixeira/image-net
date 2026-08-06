@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ImageNet POC — Teaching Machines to See</title>
+  <style>
+    :root {
+      --ink: #f4f7fb;
+      --muted: #aab6c8;
+      --bg: #07111d;
+      --panel: #101e2f;
+      --cyan: #42d9c8;
+      --lime: #c7f36b;
+      --orange: #ff9f66;
+      --line: rgba(255,255,255,.11);
+    }
+    * { box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; }
+    body {
+      color: var(--ink); background: var(--bg); font-family: Inter, ui-sans-serif, system-ui, -apple-system, sans-serif;
+      cursor: default;
+    }
+    body::before {
+      content: ""; position: fixed; inset: 0; pointer-events: none;
+      background: radial-gradient(circle at 85% 15%, rgba(66,217,200,.12), transparent 28%),
+                  radial-gradient(circle at 10% 90%, rgba(199,243,107,.07), transparent 26%),
+                  linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
+                  linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px);
+      background-size: auto, auto, 48px 48px, 48px 48px;
+    }
+    .slide {
+      position: absolute; inset: 0; display: none; padding: clamp(34px, 5vw, 78px) clamp(42px, 7vw, 112px) 76px;
+      opacity: 0; transform: translateY(10px);
+    }
+    .slide.active { display: flex; flex-direction: column; justify-content: center; animation: enter .42s ease forwards; }
+    @keyframes enter { to { opacity: 1; transform: none; } }
+    .eyebrow { color: var(--cyan); font: 700 13px/1.2 ui-monospace, SFMono-Regular, monospace; letter-spacing: .16em; text-transform: uppercase; margin-bottom: 18px; }
+    h1, h2, h3, p { margin-top: 0; }
+    h1 { max-width: 950px; font-size: clamp(54px, 7.6vw, 112px); line-height: .94; letter-spacing: -.065em; margin-bottom: 28px; }
+    h2 { max-width: 980px; font-size: clamp(38px, 5vw, 72px); line-height: 1.02; letter-spacing: -.045em; margin-bottom: 34px; }
+    h3 { font-size: clamp(20px, 2vw, 30px); margin-bottom: 11px; }
+    p { color: var(--muted); font-size: clamp(18px, 1.7vw, 27px); line-height: 1.45; }
+    .lead { max-width: 790px; font-size: clamp(21px, 2.1vw, 31px); }
+    .accent { color: var(--lime); }
+    .cyan { color: var(--cyan); }
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(22px, 4vw, 64px); align-items: stretch; }
+    .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+    .card { background: rgba(16,30,47,.82); border: 1px solid var(--line); border-radius: 18px; padding: clamp(20px, 2.5vw, 34px); }
+    .number { display: block; color: var(--lime); font-size: clamp(40px, 5vw, 74px); font-weight: 800; letter-spacing: -.055em; line-height: 1; margin-bottom: 10px; }
+    .label { color: var(--muted); font-size: clamp(15px, 1.45vw, 22px); line-height: 1.3; }
+    .flow { display: grid; grid-template-columns: repeat(7, auto); gap: 13px; align-items: center; }
+    .flow .node { min-height: 150px; display: grid; place-items: center; text-align: center; background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 20px; font-weight: 700; font-size: clamp(17px, 1.6vw, 24px); }
+    .flow .arrow { color: var(--cyan); font-size: 32px; }
+    .mini { display: block; color: var(--muted); font-size: 14px; font-weight: 500; margin-top: 7px; }
+    .timeline { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; position: relative; }
+    .timeline::before { content: ""; position: absolute; height: 2px; background: var(--line); left: 8%; right: 8%; top: 23px; }
+    .event { position: relative; padding-top: 60px; }
+    .event::before { content: ""; position: absolute; top: 14px; left: 0; width: 18px; height: 18px; border-radius: 50%; background: var(--cyan); box-shadow: 0 0 0 7px rgba(66,217,200,.12); }
+    .year { color: var(--lime); font: 800 clamp(28px, 3vw, 44px)/1 ui-monospace, monospace; }
+    .metric { border-left: 3px solid var(--cyan); padding: 5px 0 5px 26px; margin-bottom: 26px; }
+    .metric p { margin: 5px 0 0; }
+    pre { margin: 0; background: #06101a; border: 1px solid var(--line); border-radius: 16px; padding: 22px 26px; overflow: hidden; font: 500 clamp(12px, 1.22vw, 19px)/1.55 ui-monospace, SFMono-Regular, Consolas, monospace; color: #d8e4f1; }
+    code .key { color: #ff9f66; } code .call { color: #66d9ef; } code .str { color: #c7f36b; } code .comment { color: #718198; }
+    .terminal { background: #050b12; border: 1px solid var(--line); border-radius: 16px; padding: 20px 24px; font: 500 clamp(13px, 1.15vw, 18px)/1.65 ui-monospace, monospace; }
+    .terminal .prompt { color: var(--cyan); }
+    .prediction { display: grid; grid-template-columns: 25px 1fr 62px; gap: 10px; align-items: center; }
+    .bar { height: 8px; background: linear-gradient(90deg, var(--cyan) var(--w), rgba(255,255,255,.08) var(--w)); border-radius: 99px; }
+    .warning { border-color: rgba(255,159,102,.35); }
+    .warning h3 { color: var(--orange); }
+    .takeaways { counter-reset: takeaway; display: grid; gap: 15px; }
+    .takeaway { counter-increment: takeaway; display: grid; grid-template-columns: 60px 1fr; align-items: center; gap: 22px; padding: 18px 24px; background: rgba(16,30,47,.7); border: 1px solid var(--line); border-radius: 16px; }
+    .takeaway::before { content: "0" counter(takeaway); color: var(--cyan); font: 800 24px/1 ui-monospace, monospace; }
+    .takeaway strong { font-size: clamp(18px, 1.7vw, 26px); }
+    .source-list { color: var(--muted); font-size: clamp(12px, 1vw, 15px); line-height: 1.6; margin-top: 20px; }
+    .source-list a { color: var(--muted); }
+    footer { position: fixed; left: clamp(28px, 4vw, 64px); right: clamp(28px, 4vw, 64px); bottom: 22px; display: flex; align-items: center; gap: 18px; color: #718198; font: 600 12px/1 ui-monospace, monospace; z-index: 5; }
+    footer > span { flex-shrink: 0; }
+    .progress { height: 3px; flex: 1; min-width: 0; background: rgba(255,255,255,.08); border-radius: 99px; overflow: hidden; }
+    .progress span { display: block; height: 100%; width: 12.5%; background: var(--cyan); transition: width .3s ease; }
+    .nav-zone { position: fixed; top: 0; bottom: 55px; width: 13%; z-index: 4; }
+    .nav-zone.prev { left: 0; } .nav-zone.next { right: 0; }
+    @media (max-width: 850px) {
+      .two-col, .cards { grid-template-columns: 1fr; }
+      .cards { gap: 10px; } .card { padding: 18px; }
+      .flow { grid-template-columns: 1fr; gap: 5px; }
+      .flow .node { min-height: auto; } .flow .arrow { transform: rotate(90deg); text-align: center; }
+      .slide { overflow: auto; justify-content: flex-start !important; padding-top: 40px; }
+      h1 { font-size: 54px; } h2 { font-size: 38px; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="slide active">
+      <div class="eyebrow">ImageNet · Proof of Concept</div>
+      <h1>Teaching<br>machines to <span class="accent">see.</span></h1>
+      <p class="lead">How one dataset accelerated computer vision—and how to use its pretrained knowledge in minutes.</p>
+    </section>
+
+    <section class="slide">
+      <div class="eyebrow">01 · What it is</div>
+      <h2>A dataset at unprecedented scale.</h2>
+      <div class="cards">
+        <div class="card"><span class="number">14.2M</span><span class="label">images in the full database</span></div>
+        <div class="card"><span class="number">21,841</span><span class="label">WordNet concepts (“synsets”)</span></div>
+        <div class="card"><span class="number">1,000</span><span class="label">classes in the widely used ImageNet-1K subset</span></div>
+      </div>
+      <p style="margin-top:24px">ImageNet-1K: <span class="cyan">1,281,167</span> training images · <span class="cyan">50,000</span> validation images</p>
+    </section>
+
+    <section class="slide">
+      <div class="eyebrow">02 · Why it mattered</div>
+      <h2>The benchmark that changed the field.</h2>
+      <div class="timeline">
+        <div class="event"><div class="year">2009</div><h3>ImageNet introduced</h3><p>Large-scale, human-verified labels organized by WordNet.</p></div>
+        <div class="event"><div class="year">2012</div><h3>AlexNet breakthrough</h3><p>Deep CNNs + GPUs delivered a dramatic competition gain.</p></div>
+        <div class="event"><div class="year">Today</div><h3>Transfer learning</h3><p>Pretrained visual features become a starting point for new tasks.</p></div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="eyebrow">03 · The inference pipeline</div>
+      <h2>From pixels to a prediction.</h2>
+      <div class="flow">
+        <div class="node">Image<span class="mini">RGB pixels</span></div><div class="arrow">→</div>
+        <div class="node">Transform<span class="mini">resize · crop · normalize</span></div><div class="arrow">→</div>
+        <div class="node">MobileNetV3<span class="mini">5.48M parameters</span></div><div class="arrow">→</div>
+        <div class="node">Top‑5<span class="mini">1,000 class scores</span></div>
+      </div>
+      <p style="margin-top:24px">Default weights: <span class="accent">75.3% Top‑1</span> · <span class="accent">92.6% Top‑5</span> · 21.1 MB</p>
+    </section>
+
+    <section class="slide">
+      <div class="eyebrow">04 · Evaluation</div>
+      <h2>How success is measured.</h2>
+      <div class="two-col">
+        <div class="metric"><h3 class="cyan">Top‑1 accuracy</h3><p>The highest-scoring prediction must match the ground-truth label.</p></div>
+        <div class="metric"><h3 class="accent">Top‑5 accuracy</h3><p>The correct label may appear anywhere among the five best predictions.</p></div>
+      </div>
+      <div class="card" style="margin-top:14px"><p style="margin:0"><strong style="color:var(--ink)">Reality check:</strong> a high benchmark score measures fit to a dataset—not general visual understanding.</p></div>
+    </section>
+
+    <section class="slide">
+      <div class="eyebrow">05 · Live POC</div>
+      <h2>16 lines that classify an image.</h2>
+      <div class="two-col">
+        <pre><code><span class="key">from</span> PIL <span class="key">import</span> Image
+<span class="key">import</span> torch
+<span class="key">from</span> torchvision.models <span class="key">import</span> (
+  MobileNet_V3_Large_Weights,
+  mobilenet_v3_large,
+)
+
+weights = MobileNet_V3_Large_Weights.DEFAULT
+model = <span class="call">mobilenet_v3_large</span>(weights=weights)
+model.<span class="call">eval</span>()
+
+image = Image.<span class="call">open</span>(<span class="str">"my-image.jpg"</span>)
+batch = weights.<span class="call">transforms</span>()(image).<span class="call">unsqueeze</span>(0)
+
+<span class="key">with</span> torch.<span class="call">inference_mode</span>():
+  probs = model(batch).<span class="call">softmax</span>(dim=1)[0]
+
+scores, ids = probs.<span class="call">topk</span>(5)</code></pre>
+        <div class="terminal"><span class="prompt">$</span> python3 demo/imagenet_demo.py<br><br>
+          <strong>ImageNet-1K classification</strong><br>
+          Device: cpu · Inference: 47.8 ms<br><br>
+          <div class="prediction"><span>1.</span><span>Labrador retriever<div class="bar" style="--w:86%"></div></span><span>68.4%</span></div>
+          <div class="prediction"><span>2.</span><span>golden retriever<div class="bar" style="--w:22%"></div></span><span>17.2%</span></div>
+          <div class="prediction"><span>3.</span><span>kuvasz<div class="bar" style="--w:5%"></div></span><span>3.9%</span></div>
+          <br><span style="color:#718198">Illustrative output—the live result may differ.</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="eyebrow">06 · Responsible use</div>
+      <h2>Powerful baseline. Important limits.</h2>
+      <div class="cards">
+        <div class="card warning"><h3>Closed world</h3><p>The model must choose among 1,000 labels—even if none fits.</p></div>
+        <div class="card warning"><h3>Bias & labels</h3><p>Web-sourced data reflects uneven representation and taxonomy choices.</p></div>
+        <div class="card warning"><h3>Domain shift</h3><p>Benchmark accuracy may fall sharply on real deployment data.</p></div>
+      </div>
+      <p style="margin-top:24px">Validate locally · inspect failures · respect access and copyright terms · add human review where needed</p>
+    </section>
+
+    <section class="slide">
+      <div class="eyebrow">07 · Takeaways</div>
+      <h2>Three ideas to remember.</h2>
+      <div class="takeaways">
+        <div class="takeaway"><strong>ImageNet created scale and a shared benchmark.</strong></div>
+        <div class="takeaway"><strong>Pretrained weights make that learning reusable.</strong></div>
+        <div class="takeaway"><strong>Benchmark accuracy ≠ real-world reliability.</strong></div>
+      </div>
+      <div class="source-list">Sources: <a href="https://www.image-net.org/download.php">ImageNet dataset</a> · <a href="https://www.image-net.org/static_files/papers/imagenet_cvpr09.pdf">ImageNet paper</a> · <a href="https://papers.nips.cc/paper/4824-imagenet-classification-with-deep-convolutional-neural-networks.pdf">AlexNet paper</a> · <a href="https://docs.pytorch.org/vision/stable/models/generated/torchvision.models.mobilenet_v3_large.html">TorchVision MobileNetV3</a></div>
+    </section>
+  </main>
+
+  <div class="nav-zone prev" aria-label="Previous slide"></div>
+  <div class="nav-zone next" aria-label="Next slide"></div>
+  <footer><span id="counter">01 / 08</span><div class="progress"><span id="progress"></span></div><span>IMAGE<span style="color:var(--cyan)">NET</span></span></footer>
+  <script>
+    const slides = [...document.querySelectorAll('.slide')];
+    const counter = document.getElementById('counter');
+    const progress = document.getElementById('progress');
+    let index = 0;
+    function show(next) {
+      index = Math.max(0, Math.min(slides.length - 1, next));
+      slides.forEach((slide, i) => slide.classList.toggle('active', i === index));
+      counter.textContent = `${String(index + 1).padStart(2, '0')} / ${String(slides.length).padStart(2, '0')}`;
+      progress.style.width = `${((index + 1) / slides.length) * 100}%`;
+      history.replaceState(null, '', `#${index + 1}`);
+    }
+    document.addEventListener('keydown', event => {
+      if (['ArrowRight', 'PageDown', ' '].includes(event.key)) { event.preventDefault(); show(index + 1); }
+      if (['ArrowLeft', 'PageUp'].includes(event.key)) { event.preventDefault(); show(index - 1); }
+      if (event.key === 'Home') show(0);
+      if (event.key === 'End') show(slides.length - 1);
+      if (event.key.toLowerCase() === 'f') document.documentElement.requestFullscreen?.();
+    });
+    document.querySelector('.prev').addEventListener('click', () => show(index - 1));
+    document.querySelector('.next').addEventListener('click', () => show(index + 1));
+    const requested = Number(location.hash.slice(1));
+    show(Number.isInteger(requested) && requested > 0 ? requested - 1 : 0);
+  </script>
+</body>
+</html>

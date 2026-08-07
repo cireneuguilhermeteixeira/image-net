@@ -4,7 +4,7 @@ This repository contains a short, presentation-ready introduction to ImageNet an
 
 ## Contents
 
-- `slides/index.html` — self-contained presentation (8 slides, no build step)
+- `slides/index.html` — self-contained presentation (6 slides, no build step)
 - `SPEAKER_NOTES.md` — an English script with timing and demo cues
 - `demo/imagenet_demo.py` — classifies a local or remote image with a model pretrained on ImageNet-1K
 - `requirements.txt` — Python dependencies for the demo
@@ -53,4 +53,4 @@ Run the demo once before presenting so the model weights are cached. If the venu
 
 ## Suggested presentation flow
 
-The slide script includes a normal path of approximately 7 minutes and optional lines that can be omitted to stay closer to 5 minutes. The live demo should take 60–90 seconds.
+The slide script includes a normal path of approximately 6 minutes and optional lines that can be omitted to stay closer to 5 minutes. The live demo should take about 60 seconds.

@@ -45,6 +45,7 @@
     .accent { color: var(--lime); }
     .cyan { color: var(--cyan); }
     .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(22px, 4vw, 64px); align-items: stretch; }
+    .two-col > * { min-width: 0; }
     .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
     .card { background: rgba(16,30,47,.82); border: 1px solid var(--line); border-radius: 18px; padding: clamp(20px, 2.5vw, 34px); }
     .number { display: block; color: var(--lime); font-size: clamp(40px, 5vw, 74px); font-weight: 800; letter-spacing: -.055em; line-height: 1; margin-bottom: 10px; }
@@ -61,6 +62,7 @@
     .metric { border-left: 3px solid var(--cyan); padding: 5px 0 5px 26px; margin-bottom: 26px; }
     .metric p { margin: 5px 0 0; }
     pre { margin: 0; background: #06101a; border: 1px solid var(--line); border-radius: 16px; padding: 22px 26px; overflow: hidden; font: 500 clamp(12px, 1.22vw, 19px)/1.55 ui-monospace, SFMono-Regular, Consolas, monospace; color: #d8e4f1; }
+    pre.compact-code { font-size: clamp(11px, 1vw, 16px); }
     code .key { color: #ff9f66; } code .call { color: #66d9ef; } code .str { color: #c7f36b; } code .comment { color: #718198; }
     .terminal { background: #050b12; border: 1px solid var(--line); border-radius: 16px; padding: 20px 24px; font: 500 clamp(13px, 1.15vw, 18px)/1.65 ui-monospace, monospace; }
     .terminal .prompt { color: var(--cyan); }
@@ -95,7 +97,7 @@
     <section class="slide active">
       <div class="eyebrow">ImageNet · Theory to Practice</div>
       <h1>How machines<br>learn to <span class="accent">see.</span></h1>
-      <p class="lead">A dataset, pretrained knowledge, and two real-time webcam POCs.</p>
+      <p class="lead">A dataset, pretrained knowledge, and a practical ergonomic webcam POC.</p>
     </section>
 
     <section class="slide">
@@ -122,42 +124,46 @@
     </section>
 
     <section class="slide">
-      <div class="eyebrow">03 · Practical POCs</div>
-      <h2>Two questions. Two models.</h2>
+      <div class="eyebrow">03 · POC 1 · ImageNet</div>
+      <h2>Classify one image.</h2>
       <div class="two-col">
-        <div class="card">
-          <h3 class="cyan">What is visible?</h3>
-          <p>MobileNet + ImageNet</p>
-          <div class="terminal">Object monitor<br><span class="accent">classification · alerts</span></div>
-        </div>
-        <div class="card">
-          <h3 class="cyan">Where is the face?</h3>
-          <p>MediaPipe Face Mesh</p>
-          <div class="terminal">Ergonomic assistant<br><span class="accent">landmarks · geometry</span></div>
+        <pre class="compact-code"><code>weights = MobileNet_V3_Large_Weights.DEFAULT
+model = <span class="call">mobilenet_v3_large</span>(weights=weights)
+
+image = Image.<span class="call">open</span>(source)
+batch = weights.<span class="call">transforms</span>()(image)
+
+probabilities = model(batch).<span class="call">softmax</span>(1)
+scores, ids = probabilities.<span class="call">topk</span>(5)</code></pre>
+        <div class="terminal"><span class="prompt">$</span> python3 demo/imagenet_demo.py<br><br>
+          <strong>ImageNet-1K classification</strong><br><br>
+          1. Samoyed&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;57.55%<br>
+          2. Arctic fox&nbsp;&nbsp;&nbsp;4.14%<br>
+          3. Pomeranian&nbsp;&nbsp;&nbsp;3.98%
         </div>
       </div>
-      <p style="margin-top:22px">Classification identifies. Landmarks locate and track.</p>
+      <p style="margin-top:22px">Preprocess → infer → convert scores → rank labels</p>
     </section>
 
     <section class="slide">
-      <div class="eyebrow">04 · Code walkthrough</div>
-      <h2>Inside the webcam monitor.</h2>
+      <div class="eyebrow">04 · POC 2 · Code walkthrough</div>
+      <h2>Inside the ergonomic monitor.</h2>
       <div class="two-col">
-        <pre><code>weights = MobileNet_V3_Large_Weights.DEFAULT
-model = <span class="call">mobilenet_v3_large</span>(weights=weights)
+        <pre><code>result = face_mesh.<span class="call">process</span>(frame)
+left = landmarks[<span class="str">LEFT_EYE</span>]
+right = landmarks[<span class="str">RIGHT_EYE</span>]
 
-worker.<span class="call">submit</span>(frame)
-result = worker.<span class="call">latest</span>()
+distance = math.<span class="call">hypot</span>(dx, dy)
+tilt = math.<span class="call">degrees</span>(math.<span class="call">atan2</span>(dy, dx))
 
-smoothed = torch.<span class="call">stack</span>(history).<span class="call">mean</span>(0)
-match = watcher.<span class="call">update</span>(result)</code></pre>
+alert = distance > calibrated * <span class="str">1.35</span></code></pre>
         <div class="takeaways">
-          <div class="takeaway"><strong>Load pretrained knowledge</strong></div>
-          <div class="takeaway"><strong>Classify outside the camera thread</strong></div>
-          <div class="takeaway"><strong>Smooth, validate, then alert</strong></div>
+          <div class="takeaway"><strong>Find facial landmarks</strong></div>
+          <div class="takeaway"><strong>Measure relative geometry</strong></div>
+          <div class="takeaway"><strong>Calibrate, smooth, then alert</strong></div>
         </div>
       </div>
-      <div class="terminal" style="margin-top:20px"><span class="prompt">$</span> python3 demo/webcam_object_monitor.py --watch <span class="accent">"coffee mug"</span></div>
+      <div class="terminal" style="margin-top:20px"><span class="prompt">$</span> python3 demo/ergonomic_webcam_monitor.py <span class="accent">--break-minutes 0.25</span></div>
     </section>
   </main>
 

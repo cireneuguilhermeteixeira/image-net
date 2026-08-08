@@ -7,7 +7,6 @@ This repository contains a short, demo-first introduction to ImageNet and practi
 - `slides/index.html` — self-contained presentation (5 slides, no build step)
 - `SPEAKER_NOTES.md` — an English script with timing and demo cues
 - `demo/imagenet_demo.py` — classifies one local or remote image
-- `demo/webcam_object_monitor.py` — real-time ImageNet classification with stable target alerts
 - `demo/ergonomic_webcam_monitor.py` — local posture, viewing-distance, and break monitor
 - `requirements.txt` — Python dependencies for all POCs
 
@@ -38,9 +37,9 @@ source .venv/bin/activate
 python3 -m pip install -r requirements.txt
 ```
 
-Run each webcam POC before presenting so camera permissions and dependencies are already confirmed.
+Run the webcam POC before presenting so camera permissions and dependencies are already confirmed.
 
-## POC 0 — Single-image baseline
+## POC 1 — ImageNet classification
 
 ```bash
 python3 demo/imagenet_demo.py
@@ -59,30 +58,6 @@ python3 demo/imagenet_demo.py https://example.com/image.jpg
 ```
 
 Run this once before presenting so the MobileNetV3 weights are cached. If the venue has unreliable internet, also download a test image and pass its local path.
-
-## POC 1 — Webcam object monitor
-
-```bash
-python3 demo/webcam_object_monitor.py
-```
-
-This demo classifies the complete camera frame while keeping the UI responsive with a background inference worker. It averages predictions over several frames to reduce flicker.
-
-Use the target-watching mode to model a simple monitored station. The following command saves a timestamped frame after a matching ImageNet class remains visible for three inference updates:
-
-```bash
-python3 demo/webcam_object_monitor.py \
-  --watch "coffee mug" \
-  --watch "water bottle" \
-  --min-confidence 15
-```
-
-Controls:
-
-- `Q` or `Esc`: quit
-- `S`: save a manual snapshot in `captures/`
-
-Practical examples include a prototype intake station, visual inventory checkpoint, or presence alert. Because ImageNet classification describes the whole frame, production systems that must locate several objects should use an object detector instead.
 
 ## POC 2 — Ergonomic webcam monitor
 
@@ -111,11 +86,11 @@ The distance value is a relative visual estimate, not a physical measurement or 
 If camera `0` is unavailable, try another device index:
 
 ```bash
-python3 demo/webcam_object_monitor.py --camera 1
+python3 demo/ergonomic_webcam_monitor.py --camera 1
 ```
 
 Close conferencing software that may already be using the camera. On Linux, verify that your user can access `/dev/video*`.
 
 ## Suggested presentation flow
 
-The speaker script uses about three minutes for theory and the final code walkthrough, plus four to five minutes for the live POCs. Use only POC 1 for a five-minute version, or run both webcam demos for a seven-to-nine-minute session.
+The speaker script uses about three minutes for theory and code walkthroughs, plus three to four minutes for the two POCs. Skip the ergonomic demo for a five-minute version, or run both demos for a seven-to-eight-minute session.

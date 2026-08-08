@@ -1,55 +1,82 @@
-# ImageNet POC — Speaker Notes
+# Computer Vision POCs — Speaker Notes
 
-**Target duration:** 6 minutes
+**Target duration:** 7–9 minutes
 
-**Language:** English
+**Format:** approximately 2 minutes of slides and 5 minutes of live demos
 
-**Before presenting:** Open `slides/index.html` and run the demo once so the model weights and sample image are cached.
+**Before presenting:** Run all demos once, confirm camera permission, cache the MobileNet weights, and keep the three commands open in separate terminal tabs.
 
-## Slide 1 — Teaching Machines to See (0:00–0:35)
+## Slide 1 — From a Dataset to a Useful System (0:00–0:25)
 
-“Today I will explain what ImageNet is, why it mattered, and show a small image-classification demo. ImageNet is not a software library or a neural network. It is a labeled image dataset and a benchmark.”
+“This session is demo-first. I will use ImageNet to establish one concept, then show two webcam applications that are closer to real products: an object monitor and an ergonomic assistant.”
 
-**Transition:** “Let us start with the data.”
+## Slide 2 — Keep the Layers Separate (0:25–1:10)
 
-## Slide 2 — A Dataset at Unprecedented Scale (0:35–1:25)
+“ImageNet is a labeled dataset. MobileNetV3 is a neural-network architecture. Training the architecture on ImageNet produces weights: millions of numbers that encode what the model learned.”
 
-“The complete ImageNet database organizes more than 14 million images into 21,841 concepts. The subset most people use is ImageNet-1K: 1,000 classes, about 1.28 million training images, and 50,000 validation images.”
+“Our first script is only a baseline. It receives one image and returns ranked labels. The next POC turns that same model into a continuous system.”
 
-“The key distinction is simple: ImageNet is the dataset. A neural network studies those images during training and stores what it learns in its weights.”
-
-## Slide 3 — The Benchmark That Changed the Field (1:25–2:15)
-
-“ImageNet gave researchers a large, shared benchmark. In 2012, AlexNet demonstrated that deep convolutional networks trained with GPUs could outperform earlier approaches by a large margin.”
-
-“That led to a reusable idea called transfer learning: train a model on a large dataset first, then adapt its learned features to a smaller, specialized task.”
-
-## Slide 4 — From Pixels to Predictions (2:15–3:15)
-
-“Our pipeline loads an image, applies the exact resize and normalization expected by the pretrained weights, runs MobileNetV3, and ranks its predictions.”
-
-“Top-1 means the first prediction is correct. Top-5 means the correct answer appears among the five best predictions. The model we use is compact: its weights file is about 21 megabytes.”
-
-## Slide 5 — Live POC (3:15–4:45)
-
-“TorchVision connects the architecture, preprocessing recipe, and class names through one weights object. The model does not query the ImageNet database during inference. It uses knowledge already encoded in the downloaded weights.”
-
-Switch to the terminal and run:
+### Optional baseline — 30 seconds
 
 ```bash
 python3 demo/imagenet_demo.py
 ```
 
-Point out the result:
+“The model does not query ImageNet at runtime. It uses the downloaded weights.”
 
-“The highest prediction is Samoyed. Similar-looking classes such as Arctic fox and Pomeranian also appear in the Top-5. The percentages are relative to the model’s 1,000 available classes, not universal certainty.”
+## Slide 3 — POC 1: Webcam Object Monitor (1:10–3:45)
 
-## Slide 6 — Useful Baseline, Real Limits (4:45–5:50)
+Start with the normal real-time view:
 
-“ImageNet pretraining is useful, but the model has a fixed vocabulary. It must choose among its 1,000 labels, even when none is appropriate. Dataset bias and domain shift can also reduce reliability on real deployment data.”
+```bash
+python3 demo/webcam_object_monitor.py
+```
 
-“The three concepts to remember are: ImageNet is the dataset, MobileNet is the architecture, and the pretrained weights are what the model learned from the dataset. Thank you.”
+Hold one clear object near the camera. Explain:
 
-## Timing adjustment
+“Classification describes the complete frame, so this works best like a visual intake station: one prominent object at a time. Inference runs in a background thread, allowing the camera window to remain responsive. The displayed result is averaged over recent predictions, which reduces label flicker.”
 
-To stay close to 5 minutes, keep the terminal demo to the default image. To extend toward 7 minutes, classify one additional local image and discuss why the Top-5 changes.
+Press `Q`, then demonstrate the monitored workflow with an object whose ImageNet label you observed:
+
+```bash
+python3 demo/webcam_object_monitor.py --watch "coffee mug" --min-confidence 15
+```
+
+“The alert requires the target to appear in several inference updates. It then saves a timestamped frame and waits through a cooldown. That pattern could prototype an intake checkpoint, inventory event, or presence alert.”
+
+Mention the limitation:
+
+“This classifier cannot draw a box around each object. A production system with several objects would replace it with an object detector, while keeping much of the surrounding pipeline.”
+
+## Slide 4 — POC 2: Ergonomic Webcam Assistant (3:45–6:20)
+
+```bash
+python3 demo/ergonomic_webcam_monitor.py --break-minutes 0.25
+```
+
+Sit comfortably and press `C`. Then move closer to the camera and tilt your head until the alerts appear.
+
+“This POC does not use ImageNet. It uses a specialized face-landmark model. The distance between the eyes provides a relative estimate of viewing distance, and the line between the eyes provides head tilt.”
+
+“It calibrates to the current user, smooths measurements across frames, and waits before raising an alert. All frames are processed locally and are not stored.”
+
+Press `B` to reset the accelerated break timer.
+
+“This is an ergonomic aid, not a calibrated physical measurement or medical device.”
+
+## Slide 5 — A Model Is Only One Component (6:20–7:10)
+
+“The useful behavior did not come from a model alone. It also required camera handling, asynchronous inference, smoothing, thresholds, persistence, user feedback, and clear limitations.”
+
+“ImageNet is valuable because it provides reusable visual knowledge. Real applications often combine that knowledge with specialized models—or replace classification entirely when the business question is about location, motion, or geometry.”
+
+## Timing options
+
+For a five-minute version, skip the static baseline and run only the webcam object monitor. For a nine-minute version, run all three scripts and invite the audience to choose an object for the watch mode.
+
+## Demo recovery
+
+- If the camera is busy, close conferencing applications and retry with `--camera 1`.
+- If an ImageNet label is unexpected, use it as an example of closed-set classification and domain limitations.
+- If the face monitor does not detect a face, improve frontal lighting and move into the center of the frame.
+- If a GUI cannot be shown, explain the pipeline using Slides 3 and 4; both contain the exact commands.

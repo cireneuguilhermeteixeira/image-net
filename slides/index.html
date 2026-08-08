@@ -77,7 +77,7 @@
     footer { position: fixed; left: clamp(28px, 4vw, 64px); right: clamp(28px, 4vw, 64px); bottom: 22px; display: flex; align-items: center; gap: 18px; color: #718198; font: 600 12px/1 ui-monospace, monospace; z-index: 5; }
     footer > span { flex-shrink: 0; }
     .progress { height: 3px; flex: 1; min-width: 0; background: rgba(255,255,255,.08); border-radius: 99px; overflow: hidden; }
-    .progress span { display: block; height: 100%; width: 16.67%; background: var(--cyan); transition: width .3s ease; }
+    .progress span { display: block; height: 100%; width: 20%; background: var(--cyan); transition: width .3s ease; }
     .nav-zone { position: fixed; top: 0; bottom: 55px; width: 13%; z-index: 4; }
     .nav-zone.prev { left: 0; } .nav-zone.next { right: 0; }
     @media (max-width: 850px) {
@@ -93,97 +93,73 @@
 <body>
   <main>
     <section class="slide active">
-      <div class="eyebrow">ImageNet · Proof of Concept</div>
-      <h1>Teaching<br>machines to <span class="accent">see.</span></h1>
-      <p class="lead">How one dataset accelerated computer vision—and how to use its pretrained knowledge in minutes.</p>
+      <div class="eyebrow">Computer Vision · Demo First</div>
+      <h1>From a dataset<br>to a <span class="accent">useful system.</span></h1>
+      <p class="lead">ImageNet classification, a real-time object monitor, and an ergonomic webcam assistant.</p>
     </section>
 
     <section class="slide">
-      <div class="eyebrow">01 · What it is</div>
-      <h2>A dataset at unprecedented scale.</h2>
-      <div class="cards">
-        <div class="card"><span class="number">14.2M</span><span class="label">images in the full database</span></div>
-        <div class="card"><span class="number">21,841</span><span class="label">WordNet concepts (“synsets”)</span></div>
-        <div class="card"><span class="number">1,000</span><span class="label">classes in the widely used ImageNet-1K subset</span></div>
-      </div>
-      <p style="margin-top:24px">ImageNet-1K: <span class="cyan">1,281,167</span> training images · <span class="cyan">50,000</span> validation images</p>
-    </section>
-
-    <section class="slide">
-      <div class="eyebrow">02 · Why it mattered</div>
-      <h2>The benchmark that changed the field.</h2>
-      <div class="timeline">
-        <div class="event"><div class="year">2009</div><h3>ImageNet introduced</h3><p>Large-scale, human-verified labels organized by WordNet.</p></div>
-        <div class="event"><div class="year">2012</div><h3>AlexNet breakthrough</h3><p>Deep CNNs + GPUs delivered a dramatic competition gain.</p></div>
-        <div class="event"><div class="year">Today</div><h3>Transfer learning</h3><p>Pretrained visual features become a starting point for new tasks.</p></div>
-      </div>
-    </section>
-
-    <section class="slide">
-      <div class="eyebrow">03 · How it works</div>
-      <h2>From pixels to predictions.</h2>
+      <div class="eyebrow">01 · The foundation</div>
+      <h2>Keep the layers separate.</h2>
       <div class="flow">
-        <div class="node">Image<span class="mini">RGB pixels</span></div><div class="arrow">→</div>
-        <div class="node">Transform<span class="mini">resize · crop · normalize</span></div><div class="arrow">→</div>
-        <div class="node">MobileNetV3<span class="mini">pretrained weights</span></div><div class="arrow">→</div>
-        <div class="node">Top‑5<span class="mini">ranked labels</span></div>
+        <div class="node">ImageNet<span class="mini">dataset + labels</span></div><div class="arrow">→</div>
+        <div class="node">MobileNetV3<span class="mini">architecture</span></div><div class="arrow">→</div>
+        <div class="node">Training<span class="mini">learn from examples</span></div><div class="arrow">→</div>
+        <div class="node">Weights<span class="mini">reusable knowledge</span></div>
       </div>
-      <div class="two-col">
-        <div class="metric"><h3 class="cyan">Top‑1</h3><p>The first prediction is correct.</p></div>
-        <div class="metric"><h3 class="accent">Top‑5</h3><p>The correct label is among the five best.</p></div>
-      </div>
-      <p>MobileNetV3 weights: <span class="accent">75.3% Top‑1</span> · <span class="accent">92.6% Top‑5</span> · 21.1 MB</p>
+      <div class="terminal" style="margin-top:24px"><span class="prompt">$</span> python3 demo/imagenet_demo.py<br><span style="color:var(--muted)">Samoyed 57.55% · one image · one prediction</span></div>
     </section>
 
     <section class="slide">
-      <div class="eyebrow">04 · Live POC</div>
-      <h2>Classify an image in Python.</h2>
+      <div class="eyebrow">02 · POC 1 · ImageNet</div>
+      <h2>Webcam object monitor.</h2>
       <div class="two-col">
-        <pre><code><span class="key">from</span> PIL <span class="key">import</span> Image
-<span class="key">import</span> torch
-<span class="key">from</span> torchvision.models <span class="key">import</span> (
-  MobileNet_V3_Large_Weights,
-  mobilenet_v3_large,
-)
-
-weights = MobileNet_V3_Large_Weights.DEFAULT
-model = <span class="call">mobilenet_v3_large</span>(weights=weights)
-model.<span class="call">eval</span>()
-
-image = Image.<span class="call">open</span>(<span class="str">"my-image.jpg"</span>)
-batch = weights.<span class="call">transforms</span>()(image).<span class="call">unsqueeze</span>(0)
-
-<span class="key">with</span> torch.<span class="call">inference_mode</span>():
-  probs = model(batch).<span class="call">softmax</span>(dim=1)[0]
-
-scores, ids = probs.<span class="call">topk</span>(5)</code></pre>
-        <div class="terminal"><span class="prompt">$</span> python3 demo/imagenet_demo.py<br><br>
-          <strong>ImageNet-1K classification</strong><br>
-          Device: cpu · Inference: 47.8 ms<br><br>
-          <div class="prediction"><span>1.</span><span>Samoyed<div class="bar" style="--w:58%"></div></span><span>57.6%</span></div>
-          <div class="prediction"><span>2.</span><span>Arctic fox<div class="bar" style="--w:4%"></div></span><span>4.1%</span></div>
-          <div class="prediction"><span>3.</span><span>Pomeranian<div class="bar" style="--w:4%"></div></span><span>4.0%</span></div>
-          <br><span style="color:#718198">Output from the bundled sample image.</span>
+        <div>
+          <div class="card"><h3 class="cyan">Real-time pipeline</h3><p>Camera frames stay responsive while a background worker runs MobileNet inference.</p></div>
+          <div class="card" style="margin-top:16px"><h3 class="accent">Stable alerts</h3><p>Average several predictions, require repeated matches, then save timestamped evidence.</p></div>
         </div>
+        <div class="terminal"><span class="prompt">$</span> python3 demo/webcam_object_monitor.py \<br>
+&nbsp;&nbsp;--watch <span class="accent">"coffee mug"</span> \<br>
+&nbsp;&nbsp;--min-confidence 15<br><br>
+Camera 30.1 FPS<br>
+1. coffee mug: 71.4%<br>
+2. water bottle: 12.8%<br><br>
+<span class="accent">ALERT · evidence saved</span></div>
+      </div>
+      <p style="margin-top:22px">Prototype uses: intake station · inventory checkpoint · object-presence alert</p>
+    </section>
+
+    <section class="slide">
+      <div class="eyebrow">03 · POC 2 · Specialized vision</div>
+      <h2>Ergonomic webcam assistant.</h2>
+      <div class="flow">
+        <div class="node">Webcam<span class="mini">local frames</span></div><div class="arrow">→</div>
+        <div class="node">Face Mesh<span class="mini">facial landmarks</span></div><div class="arrow">→</div>
+        <div class="node">Geometry<span class="mini">distance · tilt · time</span></div><div class="arrow">→</div>
+        <div class="node">Feedback<span class="mini">posture + break alerts</span></div>
+      </div>
+      <div class="two-col" style="margin-top:24px">
+        <div class="metric"><h3 class="cyan">Useful behavior</h3><p>Calibrates to the user, smooths landmarks, and warns only after a sustained issue.</p></div>
+        <div class="terminal"><span class="prompt">$</span> python3 demo/ergonomic_webcam_monitor.py<br><br><span class="accent">C</span> calibrate · <span class="accent">B</span> reset break · <span class="accent">Q</span> quit</div>
       </div>
     </section>
 
     <section class="slide">
-      <div class="eyebrow">05 · Takeaways</div>
-      <h2>Useful baseline. Real limits.</h2>
+      <div class="eyebrow">04 · What production adds</div>
+      <h2>A model is only one component.</h2>
       <div class="cards">
-        <div class="card warning"><h3>1,000 labels</h3><p>The model cannot predict concepts outside its fixed vocabulary.</p></div>
-        <div class="card warning"><h3>Dataset bias</h3><p>Web-sourced data carries representation and labeling choices.</p></div>
-        <div class="card warning"><h3>Domain shift</h3><p>Real-world data can be very different from the benchmark.</p></div>
+        <div class="card"><h3>Model</h3><p>Classification, detection, landmarks, or segmentation—chosen for the actual question.</p></div>
+        <div class="card"><h3>System</h3><p>Camera, threading, smoothing, thresholds, alerts, storage, and observability.</p></div>
+        <div class="card warning"><h3>Validation</h3><p>Test with real users and conditions. Confidence is not guaranteed correctness.</p></div>
       </div>
-      <p style="margin-top:24px"><strong style="color:var(--ink)">Remember:</strong> ImageNet is the dataset. MobileNet is the architecture. The weights are what the model learned.</p>
-      <div class="source-list">Sources: <a href="https://www.image-net.org/download.php">ImageNet dataset</a> · <a href="https://www.image-net.org/static_files/papers/imagenet_cvpr09.pdf">ImageNet paper</a> · <a href="https://papers.nips.cc/paper/4824-imagenet-classification-with-deep-convolutional-neural-networks.pdf">AlexNet paper</a> · <a href="https://docs.pytorch.org/vision/stable/models/generated/torchvision.models.mobilenet_v3_large.html">TorchVision MobileNetV3</a></div>
+      <p style="margin-top:24px"><strong style="color:var(--ink)">Takeaway:</strong> ImageNet gives reusable visual knowledge; useful products combine it—or replace it—with task-specific models and engineering.</p>
+      <div class="source-list">Sources: <a href="https://www.image-net.org/download.php">ImageNet</a> · <a href="https://docs.pytorch.org/vision/stable/models/generated/torchvision.models.mobilenet_v3_large.html">TorchVision MobileNetV3</a> · <a href="https://ai.google.dev/edge/mediapipe/solutions/vision/face_landmarker">MediaPipe Face Landmarker</a></div>
     </section>
   </main>
 
   <div class="nav-zone prev" aria-label="Previous slide"></div>
   <div class="nav-zone next" aria-label="Next slide"></div>
-  <footer><span id="counter">01 / 06</span><div class="progress"><span id="progress"></span></div><span>IMAGE<span style="color:var(--cyan)">NET</span></span></footer>
+  <footer><span id="counter">01 / 05</span><div class="progress"><span id="progress"></span></div><span>VISION<span style="color:var(--cyan)">POC</span></span></footer>
   <script>
     const slides = [...document.querySelectorAll('.slide')];
     const counter = document.getElementById('counter');

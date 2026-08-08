@@ -93,67 +93,71 @@
 <body>
   <main>
     <section class="slide active">
-      <div class="eyebrow">Computer Vision · Demo First</div>
-      <h1>From a dataset<br>to a <span class="accent">useful system.</span></h1>
-      <p class="lead">ImageNet classification, a real-time object monitor, and an ergonomic webcam assistant.</p>
+      <div class="eyebrow">ImageNet · Theory to Practice</div>
+      <h1>How machines<br>learn to <span class="accent">see.</span></h1>
+      <p class="lead">A dataset, pretrained knowledge, and two real-time webcam POCs.</p>
     </section>
 
     <section class="slide">
-      <div class="eyebrow">01 · The foundation</div>
-      <h2>Keep the layers separate.</h2>
-      <div class="flow">
-        <div class="node">ImageNet<span class="mini">dataset + labels</span></div><div class="arrow">→</div>
-        <div class="node">MobileNetV3<span class="mini">architecture</span></div><div class="arrow">→</div>
-        <div class="node">Training<span class="mini">learn from examples</span></div><div class="arrow">→</div>
-        <div class="node">Weights<span class="mini">reusable knowledge</span></div>
-      </div>
-      <div class="terminal" style="margin-top:24px"><span class="prompt">$</span> python3 demo/imagenet_demo.py<br><span style="color:var(--muted)">Samoyed 57.55% · one image · one prediction</span></div>
-    </section>
-
-    <section class="slide">
-      <div class="eyebrow">02 · POC 1 · ImageNet</div>
-      <h2>Webcam object monitor.</h2>
-      <div class="two-col">
-        <div>
-          <div class="card"><h3 class="cyan">Real-time pipeline</h3><p>Camera frames stay responsive while a background worker runs MobileNet inference.</p></div>
-          <div class="card" style="margin-top:16px"><h3 class="accent">Stable alerts</h3><p>Average several predictions, require repeated matches, then save timestamped evidence.</p></div>
-        </div>
-        <div class="terminal"><span class="prompt">$</span> python3 demo/webcam_object_monitor.py \<br>
-&nbsp;&nbsp;--watch <span class="accent">"coffee mug"</span> \<br>
-&nbsp;&nbsp;--min-confidence 15<br><br>
-Camera 30.1 FPS<br>
-1. coffee mug: 71.4%<br>
-2. water bottle: 12.8%<br><br>
-<span class="accent">ALERT · evidence saved</span></div>
-      </div>
-      <p style="margin-top:22px">Prototype uses: intake station · inventory checkpoint · object-presence alert</p>
-    </section>
-
-    <section class="slide">
-      <div class="eyebrow">03 · POC 2 · Specialized vision</div>
-      <h2>Ergonomic webcam assistant.</h2>
-      <div class="flow">
-        <div class="node">Webcam<span class="mini">local frames</span></div><div class="arrow">→</div>
-        <div class="node">Face Mesh<span class="mini">facial landmarks</span></div><div class="arrow">→</div>
-        <div class="node">Geometry<span class="mini">distance · tilt · time</span></div><div class="arrow">→</div>
-        <div class="node">Feedback<span class="mini">posture + break alerts</span></div>
-      </div>
-      <div class="two-col" style="margin-top:24px">
-        <div class="metric"><h3 class="cyan">Useful behavior</h3><p>Calibrates to the user, smooths landmarks, and warns only after a sustained issue.</p></div>
-        <div class="terminal"><span class="prompt">$</span> python3 demo/ergonomic_webcam_monitor.py<br><br><span class="accent">C</span> calibrate · <span class="accent">B</span> reset break · <span class="accent">Q</span> quit</div>
-      </div>
-    </section>
-
-    <section class="slide">
-      <div class="eyebrow">04 · What production adds</div>
-      <h2>A model is only one component.</h2>
+      <div class="eyebrow">01 · Theory</div>
+      <h2>ImageNet is the textbook.</h2>
       <div class="cards">
-        <div class="card"><h3>Model</h3><p>Classification, detection, landmarks, or segmentation—chosen for the actual question.</p></div>
-        <div class="card"><h3>System</h3><p>Camera, threading, smoothing, thresholds, alerts, storage, and observability.</p></div>
-        <div class="card warning"><h3>Validation</h3><p>Test with real users and conditions. Confidence is not guaranteed correctness.</p></div>
+        <div class="card"><span class="number">14.2M</span><span class="label">labeled images</span></div>
+        <div class="card"><span class="number">21,841</span><span class="label">visual concepts</span></div>
+        <div class="card"><span class="number">1,000</span><span class="label">classes in ImageNet‑1K</span></div>
       </div>
-      <p style="margin-top:24px"><strong style="color:var(--ink)">Takeaway:</strong> ImageNet gives reusable visual knowledge; useful products combine it—or replace it—with task-specific models and engineering.</p>
-      <div class="source-list">Sources: <a href="https://www.image-net.org/download.php">ImageNet</a> · <a href="https://docs.pytorch.org/vision/stable/models/generated/torchvision.models.mobilenet_v3_large.html">TorchVision MobileNetV3</a> · <a href="https://ai.google.dev/edge/mediapipe/solutions/vision/face_landmarker">MediaPipe Face Landmarker</a></div>
+      <p style="margin-top:24px"><strong style="color:var(--ink)">Dataset ≠ model.</strong> ImageNet provides examples and a benchmark.</p>
+    </section>
+
+    <section class="slide">
+      <div class="eyebrow">02 · Theory</div>
+      <h2>Training turns examples into weights.</h2>
+      <div class="flow">
+        <div class="node">ImageNet<span class="mini">training data</span></div><div class="arrow">→</div>
+        <div class="node">MobileNetV3<span class="mini">architecture</span></div><div class="arrow">→</div>
+        <div class="node">Weights<span class="mini">learned patterns</span></div><div class="arrow">→</div>
+        <div class="node">Prediction<span class="mini">Top‑1 · Top‑5</span></div>
+      </div>
+      <p style="margin-top:24px"><span class="cyan">AlexNet</span> proved the scale in 2012. <span class="accent">MobileNet</span> made inference practical on smaller devices.</p>
+    </section>
+
+    <section class="slide">
+      <div class="eyebrow">03 · Practical POCs</div>
+      <h2>Two questions. Two models.</h2>
+      <div class="two-col">
+        <div class="card">
+          <h3 class="cyan">What is visible?</h3>
+          <p>MobileNet + ImageNet</p>
+          <div class="terminal">Object monitor<br><span class="accent">classification · alerts</span></div>
+        </div>
+        <div class="card">
+          <h3 class="cyan">Where is the face?</h3>
+          <p>MediaPipe Face Mesh</p>
+          <div class="terminal">Ergonomic assistant<br><span class="accent">landmarks · geometry</span></div>
+        </div>
+      </div>
+      <p style="margin-top:22px">Classification identifies. Landmarks locate and track.</p>
+    </section>
+
+    <section class="slide">
+      <div class="eyebrow">04 · Code walkthrough</div>
+      <h2>Inside the webcam monitor.</h2>
+      <div class="two-col">
+        <pre><code>weights = MobileNet_V3_Large_Weights.DEFAULT
+model = <span class="call">mobilenet_v3_large</span>(weights=weights)
+
+worker.<span class="call">submit</span>(frame)
+result = worker.<span class="call">latest</span>()
+
+smoothed = torch.<span class="call">stack</span>(history).<span class="call">mean</span>(0)
+match = watcher.<span class="call">update</span>(result)</code></pre>
+        <div class="takeaways">
+          <div class="takeaway"><strong>Load pretrained knowledge</strong></div>
+          <div class="takeaway"><strong>Classify outside the camera thread</strong></div>
+          <div class="takeaway"><strong>Smooth, validate, then alert</strong></div>
+        </div>
+      </div>
+      <div class="terminal" style="margin-top:20px"><span class="prompt">$</span> python3 demo/webcam_object_monitor.py --watch <span class="accent">"coffee mug"</span></div>
     </section>
   </main>
 

@@ -1,82 +1,87 @@
-# Computer Vision POCs — Speaker Notes
+# ImageNet and Webcam POCs — Speaker Notes
 
 **Target duration:** 7–9 minutes
 
-**Format:** approximately 2 minutes of slides and 5 minutes of live demos
+**Format:** about 2½ minutes of theory, 4–5 minutes of demos, and 1 minute explaining the code
 
-**Before presenting:** Run all demos once, confirm camera permission, cache the MobileNet weights, and keep the three commands open in separate terminal tabs.
+**Before presenting:** Confirm camera permission, cache the MobileNet weights, and keep both webcam commands open in separate terminal tabs.
 
-## Slide 1 — From a Dataset to a Useful System (0:00–0:25)
+## Slide 1 — How Machines Learn to See (0:00–0:25)
 
-“This session is demo-first. I will use ImageNet to establish one concept, then show two webcam applications that are closer to real products: an object monitor and an ergonomic assistant.”
+“I will briefly explain the theory behind ImageNet and pretrained models, then spend most of the session on two webcam POCs. At the end, we will connect the live behavior back to the code.”
 
-## Slide 2 — Keep the Layers Separate (0:25–1:10)
+## Slide 2 — ImageNet Is the Textbook (0:25–1:15)
 
-“ImageNet is a labeled dataset. MobileNetV3 is a neural-network architecture. Training the architecture on ImageNet produces weights: millions of numbers that encode what the model learned.”
+“ImageNet is not a neural network. It is a labeled image dataset and a benchmark. The complete database contains about 14.2 million images organized into 21,841 concepts.”
 
-“Our first script is only a baseline. It receives one image and returns ranked labels. The next POC turns that same model into a continuous system.”
+“Most developers use ImageNet-1K, a subset with 1,000 categories and about 1.28 million training images. The dataset supplies the examples; a model is the system that learns from them.”
 
-### Optional baseline — 30 seconds
+## Slide 3 — Training Turns Examples into Weights (1:15–2:20)
 
-```bash
-python3 demo/imagenet_demo.py
-```
+“MobileNetV3 is the architecture: the mathematical structure of the network. During training, it repeatedly predicts labels, measures its errors, and adjusts millions of numeric weights.”
 
-“The model does not query ImageNet at runtime. It uses the downloaded weights.”
+“The final weights contain reusable visual patterns. Our demo downloads only those weights, not the ImageNet database.”
 
-## Slide 3 — POC 1: Webcam Object Monitor (1:10–3:45)
+“AlexNet demonstrated the impact of deep networks and GPUs on ImageNet in 2012. MobileNet came later with an architecture optimized for efficient inference. Both can have ImageNet-trained weights, but neither one is ImageNet itself.”
 
-Start with the normal real-time view:
+## Slide 4 — Two Questions, Two Models (2:20–2:55)
+
+“The first POC asks what is visible in the complete frame. MobileNet returns ImageNet labels and confidence scores.”
+
+“The second asks where parts of the face are. MediaPipe returns coordinates for facial landmarks. That is why it can measure relative distance and head tilt. Classification identifies; landmarks locate and track.”
+
+## Live Demo 1 — Webcam Object Monitor (2:55–5:10)
 
 ```bash
 python3 demo/webcam_object_monitor.py
 ```
 
-Hold one clear object near the camera. Explain:
+Hold one clear object near the camera and explain:
 
-“Classification describes the complete frame, so this works best like a visual intake station: one prominent object at a time. Inference runs in a background thread, allowing the camera window to remain responsive. The displayed result is averaged over recent predictions, which reduces label flicker.”
+“The camera can produce around 30 frames per second, but CPU inference is slower. The application therefore keeps camera capture on the main thread and classifies frames in a background worker.”
 
-Press `Q`, then demonstrate the monitored workflow with an object whose ImageNet label you observed:
+Press `Q`, then demonstrate a monitored workflow using a label observed in the first run:
 
 ```bash
 python3 demo/webcam_object_monitor.py --watch "coffee mug" --min-confidence 15
 ```
 
-“The alert requires the target to appear in several inference updates. It then saves a timestamped frame and waits through a cooldown. That pattern could prototype an intake checkpoint, inventory event, or presence alert.”
+“Predictions are averaged across recent frames. An alert requires repeated matches and has a cooldown, reducing false triggers and duplicate evidence.”
 
-Mention the limitation:
+“Because this is classification, it describes the complete frame. A production application that must locate several objects should use an object detector.”
 
-“This classifier cannot draw a box around each object. A production system with several objects would replace it with an object detector, while keeping much of the surrounding pipeline.”
-
-## Slide 4 — POC 2: Ergonomic Webcam Assistant (3:45–6:20)
+## Live Demo 2 — Ergonomic Webcam Assistant (5:10–7:10)
 
 ```bash
 python3 demo/ergonomic_webcam_monitor.py --break-minutes 0.25
 ```
 
-Sit comfortably and press `C`. Then move closer to the camera and tilt your head until the alerts appear.
+Sit comfortably and press `C`. Move closer and tilt your head until the warnings appear.
 
-“This POC does not use ImageNet. It uses a specialized face-landmark model. The distance between the eyes provides a relative estimate of viewing distance, and the line between the eyes provides head tilt.”
+“This POC uses MediaPipe rather than ImageNet. It estimates viewing distance from the apparent distance between the eyes and calculates tilt from the angle of the eye line. Measurements are smoothed and must remain outside the threshold before an alert appears.”
 
-“It calibrates to the current user, smooths measurements across frames, and waits before raising an alert. All frames are processed locally and are not stored.”
+“Processing is local and frames are not stored. This is an ergonomic aid, not a medical device or calibrated distance sensor.”
 
-Press `B` to reset the accelerated break timer.
+## Slide 5 — Inside the Webcam Monitor (7:10–8:20)
 
-“This is an ergonomic aid, not a calibrated physical measurement or medical device.”
+Return to the final slide and explain the four important lines:
 
-## Slide 5 — A Model Is Only One Component (6:20–7:10)
+1. “The weights object links the pretrained model, preprocessing recipe, and ImageNet class names.”
+2. “`worker.submit(frame)` sends a copy of the newest camera frame to the inference thread.”
+3. “`worker.latest()` lets the UI reuse the last completed prediction without blocking.”
+4. “The history average reduces flicker, and the watcher applies confidence, stability, and cooldown rules before saving evidence.”
 
-“The useful behavior did not come from a model alone. It also required camera handling, asynchronous inference, smoothing, thresholds, persistence, user feedback, and clear limitations.”
+Conclude:
 
-“ImageNet is valuable because it provides reusable visual knowledge. Real applications often combine that knowledge with specialized models—or replace classification entirely when the business question is about location, motion, or geometry.”
+“The model provides perception, but the useful POC comes from combining it with camera handling, concurrency, smoothing, thresholds, and user feedback.”
 
 ## Timing options
 
-For a five-minute version, skip the static baseline and run only the webcam object monitor. For a nine-minute version, run all three scripts and invite the audience to choose an object for the watch mode.
+For a five-minute version, omit the ergonomic demo. For a longer version, invite the audience to choose an object and discuss why ImageNet sometimes returns an unexpected label.
 
 ## Demo recovery
 
-- If the camera is busy, close conferencing applications and retry with `--camera 1`.
-- If an ImageNet label is unexpected, use it as an example of closed-set classification and domain limitations.
-- If the face monitor does not detect a face, improve frontal lighting and move into the center of the frame.
-- If a GUI cannot be shown, explain the pipeline using Slides 3 and 4; both contain the exact commands.
+- If the camera is busy, close conferencing applications or retry with `--camera 1`.
+- If an object label is unexpected, use it to explain closed-set classification.
+- If the face monitor fails, improve frontal lighting and center the face.
+- If no GUI can be shown, use Slides 4 and 5 to explain the two pipelines and code.

@@ -118,4 +118,4 @@ Close conferencing software that may already be using the camera. On Linux, veri
 
 ## Suggested presentation flow
 
-The speaker script uses about two minutes for five slides and four to five minutes for the live POCs. Use only POC 1 for a five-minute version, or run both webcam demos for a seven-to-nine-minute session.
+The speaker script uses about three minutes for theory and the final code walkthrough, plus four to five minutes for the live POCs. Use only POC 1 for a five-minute version, or run both webcam demos for a seven-to-nine-minute session.

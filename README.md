@@ -4,7 +4,7 @@ This repository contains a short, demo-first introduction to ImageNet and practi
 
 ## Contents
 
-- `slides/index.html` — self-contained presentation (5 slides, no build step)
+- `slides/index.html` — self-contained presentation (7 slides, no build step)
 - `SPEAKER_NOTES.md` — an English script with timing and demo cues
 - `demo/imagenet_demo.py` — classifies one local or remote image
 - `demo/imagenet_webcam.py` — lightweight live ImageNet-1K classification from a webcam

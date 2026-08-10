@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Lightweight real-time ImageNet-1K classification from a webcam."""
+"""Lightweight real-time ImageNet-1K classification from a webcam.
+
+Pipeline: capture a frame, isolate its center, apply the preprocessing expected
+by MobileNetV3, infer 1,000 class probabilities, and display the highest scores.
+Inference is intentionally skipped on some frames so the camera remains fluid.
+"""
 
 from __future__ import annotations
 
@@ -46,6 +51,9 @@ def parse_args() -> argparse.Namespace:
 
 def focus_crop(frame: np.ndarray, scale: float) -> tuple[np.ndarray, tuple[int, int, int, int]]:
     """Return a centered square crop and its (left, top, right, bottom) bounds."""
+    # ImageNet models classify the whole input rather than locating each object.
+    # A focus area reduces background noise and tells the presenter where to
+    # place the object that should dominate the prediction.
     height, width = frame.shape[:2]
     side = max(1, int(min(height, width) * scale))
     left = (width - side) // 2
@@ -61,6 +69,8 @@ def draw_panel(
     fps: float,
 ) -> None:
     """Draw predictions without changing the frame used for inference."""
+    # Draw on a copy first, then blend it to obtain a translucent background.
+    # This panel is added after inference, so its text never reaches the model.
     panel_height = 104 + 36 * len(predictions)
     overlay = frame.copy()
     cv2.rectangle(overlay, (14, 14), (520, panel_height), (7, 17, 29), -1)
@@ -90,10 +100,16 @@ def main() -> int:
         raise SystemExit("--smoothing must be between 0 and 0.95")
 
     print("Loading MobileNetV3 Small weights (the first run may download about 10 MB)...")
+
+    # The weights object is more than a checkpoint: torchvision also stores the
+    # matching preprocessing recipe and all 1,000 ImageNet class names in it.
     weights = MobileNet_V3_Small_Weights.DEFAULT
     model = mobilenet_v3_small(weights=weights).eval()
     transform = weights.transforms()
     categories = weights.meta["categories"]
+
+    # CUDA is used when available; otherwise this small network runs on the CPU.
+    # eval() above disables training-only behavior such as dropout updates.
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model.to(device)
 
@@ -115,31 +131,49 @@ def main() -> int:
                 print("Could not read a frame from the camera.")
                 break
 
+            # Mirroring makes the preview behave like a familiar webcam view.
             frame = cv2.flip(frame, 1)
             crop, bounds = focus_crop(frame, args.crop_scale)
             frame_number += 1
 
+            # Classifying every frame wastes work because adjacent webcam frames
+            # are nearly identical. Reusing the latest result keeps the UI light.
             if frame_number == 1 or frame_number % args.every == 0:
+                # OpenCV supplies BGR pixels, while PIL/torchvision expect RGB.
                 image = Image.fromarray(cv2.cvtColor(crop, cv2.COLOR_BGR2RGB))
+
+                # The official transform resizes, center-crops, converts to a
+                # tensor, and normalizes pixels exactly as training expected.
                 batch = transform(image).unsqueeze(0).to(device)
+
+                # GPU operations are asynchronous. Synchronizing around the
+                # model call makes the displayed inference time meaningful.
                 if device.type == "cuda":
                     torch.cuda.synchronize()
                 started = time.perf_counter()
                 with torch.inference_mode():
+                    # MobileNet returns 1,000 raw logits. Softmax converts them
+                    # into relative probabilities whose sum is one.
                     current = model(batch).softmax(dim=1)[0]
                 if device.type == "cuda":
                     torch.cuda.synchronize()
                 inference_ms = (time.perf_counter() - started) * 1_000
 
+                # An exponential moving average prevents labels from flickering
+                # when two classes receive similar scores in consecutive frames.
                 smoothed = current if smoothed is None else (
                     args.smoothing * smoothed + (1.0 - args.smoothing) * current
                 )
+
+                # topk returns class indexes; categories maps them to readable
+                # ImageNet labels such as "coffee mug" or "banana".
                 scores, class_ids = smoothed.topk(args.top_k)
                 predictions = [
                     (categories[class_id], score * 100)
                     for score, class_id in zip(scores.tolist(), class_ids.tolist())
                 ]
 
+            # Camera FPS is averaged over a short rolling window for stability.
             now = time.perf_counter()
             frame_times.append(now)
             fps = 0.0
@@ -148,6 +182,7 @@ def main() -> int:
                 if elapsed > 0:
                     fps = (len(frame_times) - 1) / elapsed
 
+            # Only after inference do we add the focus rectangle and UI panel.
             left, top, right, bottom = bounds
             cv2.rectangle(frame, (left, top), (right, bottom), (66, 217, 200), 2)
             cv2.putText(frame, "place one object inside this area", (left + 8, bottom - 12),

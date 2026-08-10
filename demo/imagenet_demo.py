@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Classify an image with MobileNetV3 pretrained on ImageNet-1K."""
+"""Classify one image with MobileNetV3 pretrained on ImageNet-1K.
+
+This small command-line example exposes the same four stages used by the live
+demo: load an image, preprocess it, run inference, and rank ImageNet labels.
+"""
 
 from __future__ import annotations
 
@@ -56,23 +60,32 @@ def load_image(source: str) -> Image.Image:
 
 def classify(image: Image.Image, top_k: int) -> tuple[list[tuple[str, float]], float, str]:
     """Return ranked labels, inference time in milliseconds, and device name."""
+    # DEFAULT selects pretrained ImageNet-1K weights. The weights object also
+    # carries the precise preprocessing pipeline and the category names.
     weights = MobileNet_V3_Large_Weights.DEFAULT
     model = mobilenet_v3_large(weights=weights)
     model.eval()
 
+    # Move both the network and its input to the same available device.
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model.to(device)
+
+    # Resize, crop and normalize with the recipe used during model training;
+    # unsqueeze adds the batch dimension expected by PyTorch: [1, 3, H, W].
     batch = weights.transforms()(image).unsqueeze(0).to(device)
 
     if device.type == "cuda":
         torch.cuda.synchronize()
     started = time.perf_counter()
     with torch.inference_mode():
+        # The output contains one score per ImageNet-1K class. Softmax changes
+        # those raw logits into relative probabilities.
         probabilities = model(batch).softmax(dim=1)[0]
     if device.type == "cuda":
         torch.cuda.synchronize()
     elapsed_ms = (time.perf_counter() - started) * 1_000
 
+    # Keep only the strongest predictions and translate indexes into labels.
     scores, class_ids = probabilities.topk(top_k)
     categories = weights.meta["categories"]
     predictions = [
@@ -109,4 +122,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

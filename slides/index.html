@@ -95,9 +95,9 @@
 <body>
   <main>
     <section class="slide active">
-      <div class="eyebrow">ImageNet · Theory to Practice</div>
-      <h1>How machines<br>learn to <span class="accent">see.</span></h1>
-      <p class="lead">A dataset, pretrained knowledge, and a practical ergonomic webcam POC.</p>
+      <div class="eyebrow">ImageNet</div>
+      <h1>ImageNet</h1>
+      <p class="lead">Cireneu Araujo.</p>
     </section>
 
     <section class="slide">
@@ -146,24 +146,24 @@ scores, ids = probabilities.<span class="call">topk</span>(5)</code></pre>
     </section>
 
     <section class="slide">
-      <div class="eyebrow">04 · POC 2 · Code walkthrough</div>
-      <h2>Inside the ergonomic monitor.</h2>
+      <div class="eyebrow">04 · POC 2 · Live ImageNet</div>
+      <h2>Classify the webcam.</h2>
       <div class="two-col">
-        <pre><code>result = face_mesh.<span class="call">process</span>(frame)
-left = landmarks[<span class="str">LEFT_EYE</span>]
-right = landmarks[<span class="str">RIGHT_EYE</span>]
+        <pre><code>weights = MobileNet_V3_Small_Weights.DEFAULT
+model = <span class="call">mobilenet_v3_small</span>(weights=weights)
 
-distance = math.<span class="call">hypot</span>(dx, dy)
-tilt = math.<span class="call">degrees</span>(math.<span class="call">atan2</span>(dy, dx))
+crop = <span class="call">focus_crop</span>(webcam_frame)
+batch = weights.<span class="call">transforms</span>()(crop)
 
-alert = distance > calibrated * <span class="str">1.35</span></code></pre>
+scores = model(batch).<span class="call">softmax</span>(1)
+top3 = scores.<span class="call">topk</span>(3)</code></pre>
         <div class="takeaways">
-          <div class="takeaway"><strong>Find facial landmarks</strong></div>
-          <div class="takeaway"><strong>Measure relative geometry</strong></div>
-          <div class="takeaway"><strong>Calibrate, smooth, then alert</strong></div>
+          <div class="takeaway"><strong>2.5M parameters</strong></div>
+          <div class="takeaway"><strong>1,000 ImageNet classes</strong></div>
+          <div class="takeaway"><strong>Infer every 5 frames</strong></div>
         </div>
       </div>
-      <div class="terminal" style="margin-top:20px"><span class="prompt">$</span> python3 demo/ergonomic_webcam_monitor.py <span class="accent">--break-minutes 0.25</span></div>
+      <div class="terminal" style="margin-top:20px"><span class="prompt">$</span> python3 demo/imagenet_webcam.py <span class="accent">--every 5</span></div>
     </section>
   </main>
 

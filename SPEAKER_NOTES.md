@@ -1,14 +1,14 @@
-# ImageNet and Ergonomic Webcam POC — Speaker Notes
+# ImageNet and Live Webcam POC — Speaker Notes
 
 **Target duration:** 6–8 minutes
 
-**Format:** about 2½ minutes of theory, 1½ minutes of ImageNet classification, and 2–3 minutes of ergonomic webcam demonstration
+**Format:** about 2½ minutes of theory, 1½ minutes of still-image classification, and 2–3 minutes of live webcam classification
 
 **Before presenting:** Confirm camera permission, cache the MobileNet weights, and keep both demo commands open in separate terminal tabs.
 
-## Slide 1 — How Machines Learn to See (0:00–0:25)
+## Slide 1 — ImageNet (0:00–0:25)
 
-“I will briefly explain ImageNet and pretrained models, then show two POCs: classification of one image and a practical ergonomic webcam assistant. The final slide connects the webcam behavior back to its code.”
+“I will briefly explain ImageNet and pretrained models, then show the same idea on one image and on a live webcam. Both POCs use MobileNetV3 weights trained on ImageNet-1K.”
 
 ## Slide 2 — ImageNet Is the Textbook (0:25–1:15)
 
@@ -22,7 +22,7 @@
 
 “The final weights contain reusable visual patterns. Our demo downloads only those weights, not the ImageNet database.”
 
-“AlexNet demonstrated the impact of deep networks and GPUs on ImageNet in 2012. MobileNet came later with an architecture optimized for efficient inference. Both can have ImageNet-trained weights, but neither one is ImageNet itself.”
+“AlexNet demonstrated the impact of deep networks and GPUs on ImageNet in 2012. MobileNet came later with an architecture optimized for efficient inference. Both can have ImageNet-trained weights.”
 
 ## Slide 4 — POC 1: Classify One Image (2:20–3:50)
 
@@ -41,37 +41,38 @@ Explain the code shown on the slide:
 
 “The model identifies the sample as a Samoyed. Similar white animals appear below it because their visual features overlap. Confidence is relative to the 1,000 available classes, not universal certainty.”
 
-## Slide 5 — POC 2: Ergonomic Webcam Monitor (3:50–6:40)
+## Slide 5 — POC 2: Live ImageNet Webcam (3:50–6:40)
 
 Run:
 
 ```bash
-python3 demo/ergonomic_webcam_monitor.py --break-minutes 0.25
+python3 demo/imagenet_webcam.py
 ```
 
-Sit comfortably and press `C`. Move closer and tilt your head until the warnings appear.
+Hold one familiar object inside the focus square, such as a mug, keyboard, banana, backpack, or water bottle. Then swap it for a second object and watch the Top-3 change.
 
 Explain the code shown on the slide:
 
-1. “MediaPipe processes each frame and returns facial landmarks.”
-2. “The app selects the left-eye and right-eye coordinates.”
-3. “The distance between the eyes provides a relative estimate of viewing distance.”
-4. “The angle of the eye line provides head tilt.”
-5. “Calibration stores the normal eye distance for this user. Measurements are smoothed and must remain outside the threshold before an alert appears.”
+1. “MobileNetV3 Small is loaded once with pretrained ImageNet-1K weights.”
+2. “The focus square isolates the object and the official weights transform applies the expected resize, crop, and normalization.”
+3. “The network returns 1,000 scores, one for each ImageNet-1K category.”
+4. “Softmax and Top-k turn those scores into the three labels shown on screen.”
+5. “To keep the app light, inference runs every five frames and predictions are smoothed between updates.”
 
-“This POC does not use ImageNet. It uses a model specialized in facial geometry. Processing is local and frames are not stored. It is an ergonomic aid, not a medical device or calibrated distance sensor.”
+“MobileNetV3 Small has about 2.5 million parameters and a roughly 10 MB weights file. Processing is local and webcam frames are not stored.”
 
 Conclude:
 
-“ImageNet classification answers what is visible. Face landmarks answer where facial points are. Useful computer-vision systems select the model that matches the real question.”
+“ImageNet is the labeled visual vocabulary; MobileNetV3 is the efficient architecture; pretrained weights connect them. The webcam turns that pipeline into a live, tangible demonstration.”
 
 ## Timing options
 
-For a five-minute version, shorten the theory and demonstrate only one posture warning. For a longer version, classify a second local image and discuss the Top-5 results.
+For a five-minute version, skip the still-image terminal demo and use only the webcam. For a longer version, compare confusing objects and discuss why closed-set classification must always choose one of its 1,000 labels.
 
 ## Demo recovery
 
 - If the camera is busy, close conferencing applications or retry with `--camera 1`.
 - If an ImageNet label is unexpected, use it to explain closed-set classification.
-- If the face monitor fails, improve frontal lighting and center the face.
-- If no GUI can be shown, use the final slide to explain landmarks, geometry, calibration, and alerts.
+- If predictions are unstable, use one well-lit object, fill most of the focus square, and keep the background simple.
+- If the computer is slow, restart with `--every 10`.
+- If no GUI can be shown, use the final slide to explain the focus crop, preprocessing, inference, smoothing, and Top-3 labels.

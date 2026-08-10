@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import time
 from collections import deque
+from pathlib import Path
 
 import cv2
 import numpy as np
@@ -19,11 +20,26 @@ from PIL import Image
 from torchvision.models import MobileNet_V3_Small_Weights, mobilenet_v3_small
 
 
+INTERNAL_CAMERA_MARKERS = (
+    "integrated",
+    "built-in",
+    "builtin",
+    "internal",
+    "facetime",
+    "laptop",
+)
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Classify the center of a webcam frame with ImageNet-1K."
     )
-    parser.add_argument("--camera", type=int, default=0, help="Camera device index")
+    parser.add_argument(
+        "--camera",
+        default="external",
+        metavar="EXTERNAL|AUTO|INDEX",
+        help="Camera selection: external (default), auto, or a device index such as 2",
+    )
     parser.add_argument("--top-k", type=int, default=3, choices=range(1, 6), metavar="1-5")
     parser.add_argument(
         "--every",
@@ -47,6 +63,89 @@ def parse_args() -> argparse.Namespace:
         help="Weight given to the previous prediction, from 0 to 0.95 (default: 0.65)",
     )
     return parser.parse_args()
+
+
+def linux_video_devices() -> list[tuple[int, str]]:
+    """Return Linux video indexes and their human-readable device names."""
+    devices: list[tuple[int, str]] = []
+    video_class = Path("/sys/class/video4linux")
+    if not video_class.is_dir():
+        return devices
+
+    for entry in video_class.glob("video*"):
+        suffix = entry.name.removeprefix("video")
+        if not suffix.isdigit():
+            continue
+        try:
+            name = (entry / "name").read_text(encoding="utf-8").strip()
+        except OSError:
+            name = entry.name
+        devices.append((int(suffix), name))
+    return sorted(devices)
+
+
+def camera_candidates(selection: str) -> list[tuple[int, str]]:
+    """Build an ordered list of camera indexes to probe."""
+    normalized = selection.strip().lower()
+    if normalized.isdigit():
+        return [(int(normalized), f"camera index {normalized}")]
+    if normalized not in {"external", "auto"}:
+        raise SystemExit("--camera must be 'external', 'auto', or a non-negative index")
+
+    devices = linux_video_devices()
+    if not devices:
+        # OpenCV does not expose portable camera names on every operating system.
+        # External webcams normally start at index 1 when index 0 is built in.
+        indexes = range(1, 6) if normalized == "external" else range(6)
+        return [(index, f"camera index {index}") for index in indexes]
+
+    if normalized == "auto":
+        return devices
+
+    # Laptop cameras commonly identify themselves with one of these markers.
+    # Some cameras expose more than one /dev/video node; candidates that do not
+    # provide actual frames are discarded later by open_camera().
+    external = [
+        (index, name)
+        for index, name in devices
+        if not any(marker in name.lower() for marker in INTERNAL_CAMERA_MARKERS)
+    ]
+
+    # If names are generic, exclude every node with the same name as video0.
+    # One physical webcam may expose multiple nodes, so removing only index 0
+    # could still select another node belonging to the notebook camera.
+    if len(external) == len(devices) and len(devices) > 1:
+        video0_name = next((name.lower() for index, name in devices if index == 0), None)
+        if video0_name is not None:
+            external = [
+                (index, name) for index, name in external if name.lower() != video0_name
+            ]
+    return external
+
+
+def open_camera(selection: str) -> tuple[cv2.VideoCapture, int, str]:
+    """Open the first selected device that can deliver a frame."""
+    candidates = camera_candidates(selection)
+    if not candidates:
+        raise SystemExit(
+            "No external webcam was detected. Use --camera INDEX to select it manually."
+        )
+
+    attempted: list[str] = []
+    for index, name in candidates:
+        attempted.append(f"{index} ({name})")
+        capture = cv2.VideoCapture(index)
+        if capture.isOpened():
+            ok, _ = capture.read()
+            if ok:
+                return capture, index, name
+        capture.release()
+
+    attempted_text = ", ".join(attempted)
+    raise SystemExit(
+        f"Could not read from the selected camera candidates: {attempted_text}. "
+        "Close other camera applications or pass --camera INDEX."
+    )
 
 
 def focus_crop(frame: np.ndarray, scale: float) -> tuple[np.ndarray, tuple[int, int, int, int]]:
@@ -113,9 +212,10 @@ def main() -> int:
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model.to(device)
 
-    capture = cv2.VideoCapture(args.camera)
-    if not capture.isOpened():
-        raise SystemExit(f"Could not open camera {args.camera}")
+    # Probe external camera candidates and require a successful frame read. This
+    # avoids choosing metadata-only /dev/video nodes or the notebook camera.
+    capture, camera_index, camera_name = open_camera(args.camera)
+    print(f"Using external webcam {camera_index}: {camera_name}")
 
     predictions: list[tuple[str, float]] = []
     smoothed: torch.Tensor | None = None

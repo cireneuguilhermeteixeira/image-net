@@ -97,7 +97,7 @@ For a five-minute version, skip the still-image terminal demo and use only the w
 
 ## Demo recovery
 
-- If the camera is busy, close conferencing applications or retry with `--camera 1`.
+- The app selects an external webcam by default. If detection fails, close conferencing applications and retry with its explicit index, for example `--camera 2`.
 - If an ImageNet label is unexpected, use it to explain closed-set classification.
 - If predictions are unstable, use one well-lit object, fill most of the focus square, and keep the background simple.
 - If the computer is slow, restart with `--every 10`.

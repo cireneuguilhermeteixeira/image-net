@@ -81,14 +81,17 @@ The default model has about 2.5 million parameters and its weights are about 10 
 
 ## Troubleshooting
 
-If camera `0` is unavailable, try another device index:
+The live demo looks for an external webcam by default. To select a known device index manually:
 
 ```bash
-python3 demo/imagenet_webcam.py --camera 1
+python3 demo/imagenet_webcam.py --camera 2
 ```
 
-Close conferencing software that may already be using the camera. On Linux, verify that your user can access `/dev/video*`.
+Use `--camera auto` only if falling back to the notebook camera is acceptable. Close conferencing software that may already be using the camera. On Linux, verify that your user can access `/dev/video*`.
 
 ## Suggested presentation flow
 
 The speaker script uses about three minutes for theory and code walkthroughs, plus three to four minutes for the two POCs. For a five-minute version, use only the webcam demo; it already demonstrates the complete ImageNet inference pipeline.
+
+
+https://youtu.be/v-N0tsXjbdk
